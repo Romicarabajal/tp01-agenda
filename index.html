@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#D99A00">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icono-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Súper Barrio">
+  <title>Súper Barrio · Sistema de stock</title>
+  <style>
+    /* ==========================================================
+       Súper Barrio · Sistema de stock
+       ========================================================== */
+
+    /* 1. FUENTES ------------------------------------------------ */
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap");
+
+    /* 2. VARIABLES (paleta, tipografía, medidas) ---------------- */
+    :root {
+      /* Marca */
+      --color-principal: #D99A00;
+      --color-principal-hover: #B88200;
+      --color-principal-suave: #FFF4D6;
+      --color-sobre-principal: #2B2100;
+
+      /* Estados del stock */
+      --color-ok: #2E9E5B;
+      --color-ok-suave: #E3F5EA;
+      --color-bajo: #F28C1B;
+      --color-bajo-suave: #FEEBD6;
+      --color-sin-stock: #D93025;
+      --color-sin-stock-suave: #FCE4E2;
+
+      /* Neutros */
+      --color-fondo: #F5F6F7;
+      --color-superficie: #FFFFFF;
+      --color-texto: #1F2937;
+      --color-texto-suave: #6B7280;
+      --color-borde: #E5E7EB;
+
+      /* Tipografía */
+      --fuente-titulos: "Poppins", system-ui, sans-serif;
+      --fuente-texto: "Inter", system-ui, sans-serif;
+
+      /* Forma y espaciado */
+      --radio: 14px;
+      --radio-chico: 8px;
+      --sombra: 0 2px 8px rgba(17, 24, 39, 0.08);
+      --sombra-fuerte: 0 6px 16px rgba(17, 24, 39, 0.14);
+      --espacio: 1rem;
+      --transicion: 0.2s ease;
+    }
+
+    /* 3. BASE (reset y estilos globales) ------------------------ */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--color-fondo);
+      color: var(--color-texto);
+      font-family: var(--fuente-texto);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 var(--espacio);
+      font-family: var(--fuente-titulos);
+      line-height: 1.2;
+    }
+
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    [hidden] { display: none !important; }
+
+    /* 4. ENCABEZADO Y MENÚ -------------------------------------- */
+    .encabezado {
+      padding: var(--espacio);
+      background: var(--color-principal);
+      color: var(--color-sobre-principal);
+      box-shadow: var(--sombra);
+    }
+
+    .logo {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.1rem;
+    }
+
+    .logo::before { content: "🛒 "; }
+
+    .subtitulo {
+      margin: 0 0 var(--espacio);
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    .menu ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .menu-boton {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 0.9rem;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.55);
+      color: var(--color-sobre-principal);
+      font-family: var(--fuente-texto);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transicion), transform var(--transicion), box-shadow var(--transicion);
+    }
+
+    .menu-boton:hover,
+    .menu-boton.activo {
+      background: var(--color-superficie);
+      transform: translateY(-2px);
+      box-shadow: var(--sombra);
+    }
+
+    /* Íconos con emojis */
+    .menu-boton[data-vista="productos"]::before   { content: "📦"; }
+    .menu-boton[data-vista="movimientos"]::before { content: "🔄"; }
+    .menu-boton[data-vista="alertas"]::before     { content: "🔔"; }
+    .menu-boton[data-vista="categorias"]::before  { content: "🏷️"; }
+
+    /* Contador de alertas: círculo rojo con número */
+    .contador {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.5rem;
+      height: 1.5rem;
+      padding: 0 0.35rem;
+      border-radius: 50%;
+      background: var(--color-sin-stock);
+      color: #FFFFFF;
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* 5. EXPORTAR / IMPORTAR ------------------------------------ */
+    .datos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: var(--espacio);
+    }
+
+    #btn-exportar::before { content: "⬇️ "; }
+    .boton-archivo::before { content: "⬆️ "; }
+
+    /* El input de archivo se oculta visualmente; la etiqueta hace de botón */
+    #input-importar {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    #input-importar:focus-visible + *,
+    .datos:focus-within .boton-archivo {
+      outline: 3px solid var(--color-sobre-principal);
+      outline-offset: 2px;
+    }
+
+    /* 6. CONTENIDO PRINCIPAL Y SECCIONES ------------------------ */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: var(--espacio);
+    }
+
+    .vista {
+      margin-bottom: 2rem;
+    }
+
+    .ayuda {
+      margin: -0.5rem 0 var(--espacio);
+      color: var(--color-texto-suave);
+      font-size: 0.9rem;
+    }
+
+    /* 7. TARJETAS: formularios, herramientas y elementos de lista */
+    form,
+    .herramientas,
+    .tabla-contenedor,
+    #lista-alertas li,
+    #lista-categorias li {
+      background: var(--color-superficie);
+      border: 1px solid var(--color-borde);
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+    }
+
+    form,
+    .herramientas {
+      display: grid;
+      grid-template-columns: 1fr;     /* mobile: una columna */
+      gap: var(--espacio);
+      padding: var(--espacio);
+      margin-bottom: var(--espacio);
+    }
+
+    /* 8. CAMPOS DE FORMULARIO ----------------------------------- */
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-texto-suave);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--color-borde);
+      border-radius: var(--radio-chico);
+      background: var(--color-superficie);
+      color: var(--color-texto);
+      font-family: var(--fuente-texto);
+      font-size: 1rem;
+      transition: border-color var(--transicion), box-shadow var(--transicion);
+    }
+
+    textarea { resize: vertical; }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--color-principal);
+      box-shadow: 0 0 0 3px var(--color-principal-suave);
+    }
+
+    .acciones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    /* 9. BOTONES ------------------------------------------------- */
+    button,
+    .boton-archivo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 1.1rem;
+      border: 0;
+      border-radius: var(--radio-chico);
+      background: var(--color-principal);
+      color: var(--color-sobre-principal);
+      font-family: var(--fuente-texto);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transicion), transform var(--transicion), box-shadow var(--transicion);
+    }
+
+    button:hover,
+    .boton-archivo:hover {
+      background: var(--color-principal-hover);
+      color: #FFFFFF;
+      transform: translateY(-2px);
+      box-shadow: var(--sombra-fuerte);
+    }
+
+    button:active,
+    .boton-archivo:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    /* Botones del menú: conservan su propio estilo */
+    .menu-boton:hover { color: var(--color-sobre-principal); }
+
+    /* Botones secundarios (limpiar) */
+    button[type="reset"] {
+      background: var(--color-borde);
+      color: var(--color-texto);
+    }
+
+    button[type="reset"]:hover {
+      background: #D1D5DB;
+      color: var(--color-texto);
+    }
+
+    /* En el encabezado, Exportar/Importar van en claro */
+    .datos button,
+    .datos .boton-archivo {
+      background: var(--color-superficie);
+      color: var(--color-sobre-principal);
+    }
+
+    .datos button:hover,
+    .datos .boton-archivo:hover {
+      background: var(--color-principal-suave);
+      color: var(--color-sobre-principal);
+    }
+
+    /* 10. TABLAS (productos y movimientos) ---------------------- */
+    .tabla-contenedor {
+      overflow-x: auto;               /* en el celular se desliza de costado */
+    }
+
+    table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th,
+    td {
+      padding: 0.7rem 0.85rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    thead th {
+      background: var(--color-principal-suave);
+      font-family: var(--fuente-titulos);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    tbody tr + tr td { border-top: 1px solid var(--color-borde); }
+    tbody tr:hover { background: var(--color-fondo); }
+
+    /* 11. INDICADORES DE ESTADO DEL STOCK ----------------------- */
+    .estado {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .estado-ok        { background: var(--color-ok-suave);        color: var(--color-ok); }
+    .estado-bajo      { background: var(--color-bajo-suave);      color: #B35F00; }
+    .estado-sin-stock { background: var(--color-sin-stock-suave); color: var(--color-sin-stock); }
+
+    .estado-ok::before        { content: "🟢"; }   /* normal */
+    .estado-bajo::before      { content: "🟠"; }   /* bajo el mínimo */
+    .estado-sin-stock::before { content: "🔴"; }   /* sin stock */
+
+    /* Tipo de movimiento */
+    .tipo-entrada { color: var(--color-ok); font-weight: 600; }
+    .tipo-salida  { color: var(--color-sin-stock); font-weight: 600; }
+    .tipo-entrada::before { content: "⬆️ "; }
+    .tipo-salida::before  { content: "⬇️ "; }
+
+    /* 12. LISTAS (alertas y categorías) ------------------------- */
+    #lista-alertas,
+    #lista-categorias {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    #lista-alertas li,
+    #lista-categorias li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem var(--espacio);
+      transition: transform var(--transicion), box-shadow var(--transicion);
+    }
+
+    #lista-alertas li:hover,
+    #lista-categorias li:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--sombra-fuerte);
+    }
+
+    #lista-alertas li { border-left: 5px solid var(--color-bajo); }
+    #lista-alertas li.sin-stock { border-left-color: var(--color-sin-stock); }
+    #lista-categorias li { border-left: 5px solid var(--color-principal); }
+
+    #lista-categorias li::before { content: "🏷️"; }
+
+    /* Mensaje cuando la lista está vacía */
+    #lista-alertas:empty::before,
+    #lista-categorias:empty::before {
+      display: block;
+      padding: 1.5rem var(--espacio);
+      border: 2px dashed var(--color-borde);
+      border-radius: var(--radio);
+      color: var(--color-texto-suave);
+      text-align: center;
+    }
+
+    #lista-alertas:empty::before    { content: "✅ No hay alertas por ahora"; }
+    #lista-categorias:empty::before { content: "📭 Todavía no hay categorías"; }
+
+    /* 13. PIE ---------------------------------------------------- */
+    .pie {
+      padding: 1.5rem var(--espacio);
+      color: var(--color-texto-suave);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .pie p { margin: 0; }
+
+    /* 14. TABLET / ESCRITORIO: dos columnas desde 768 px --------- */
+    @media (min-width: 768px) {
+      .encabezado {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        column-gap: 2rem;
+        padding: 1.25rem 2rem;
+      }
+
+      .subtitulo { margin-bottom: 0; }
+
+      .menu { grid-column: 1 / -1; margin-top: var(--espacio); }
+      .datos { grid-column: 2; grid-row: 1 / 3; margin-top: 0; justify-self: end; }
+
+      main { padding: 2rem; }
+
+      form,
+      .herramientas {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .campo-ancho,
+      .acciones {
+        grid-column: 1 / -1;
+      }
+
+      #lista-alertas,
+      #lista-categorias {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      table { min-width: 0; }
+    }
+
+    /* 15. EXTRAS QUE USA app.js -------------------------------- */
+    .li-texto { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .li-texto small { color: var(--color-texto-suave); }
+
+    .celda-acciones { display: flex; gap: 0.4rem; }
+    .btn-chico { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+    .btn-peligro { background: var(--color-sin-stock-suave); color: var(--color-sin-stock); }
+    .btn-peligro:hover { background: var(--color-sin-stock); color: #FFFFFF; }
+
+    td.vacio { padding: 1.5rem var(--espacio); color: var(--color-texto-suave); text-align: center; white-space: normal; }
+    tbody tr:hover td.vacio { background: transparent; }
+
+    .contador.vacio { background: #9CA3AF; }
+
+    /* Cartel de "sin conexión" (arriba) y avisos (abajo) */
+    .aviso-conexion {
+      padding: 0.5rem var(--espacio);
+      background: #FFF4D6;
+      border-bottom: 1px solid var(--color-principal);
+      color: var(--color-sobre-principal);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .aviso {
+      position: fixed;
+      left: 50%;
+      bottom: 1rem;
+      z-index: 10;
+      width: max-content;
+      max-width: calc(100% - 2rem);
+      padding: 0.75rem 1.1rem;
+      border-radius: var(--radio);
+      background: var(--color-texto);
+      color: #FFFFFF;
+      font-size: 0.95rem;
+      box-shadow: var(--sombra-fuerte);
+      transform: translateX(-50%);
+    }
+    .aviso-error { background: var(--color-sin-stock); }
+
+    /* Celular: botones y campos de al menos 44 px para tocar con el dedo */
+    @media (max-width: 767px) {
+      button, .boton-archivo, input, select { min-height: 44px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="encabezado">
+    <h1 class="logo">Súper Barrio</h1>
+    <p class="subtitulo">Sistema de control de stock</p>
+
+    <nav class="menu" aria-label="Menú principal">
+      <ul>
+        <li><button type="button" class="menu-boton" data-vista="productos">Productos</button></li>
+        <li><button type="button" class="menu-boton" data-vista="movimientos">Movimientos</button></li>
+        <li>
+          <button type="button" class="menu-boton" data-vista="alertas">
+            Alertas <span id="contador-alertas" class="contador">0</span>
+          </button>
+        </li>
+        <li><button type="button" class="menu-boton" data-vista="categorias">Categorías</button></li>
+      </ul>
+    </nav>
+
+    <div class="datos">
+      <button type="button" id="btn-exportar">Exportar</button>
+      <label for="input-importar" class="boton-archivo">Importar</label>
+      <input type="file" id="input-importar" accept=".json,application/json">
+    </div>
+  </header>
+
+  <main>
+
+    <!-- PRODUCTOS -->
+    <section id="vista-productos" class="vista" aria-labelledby="titulo-productos">
+      <h2 id="titulo-productos">Productos</h2>
+
+      <form id="form-producto" autocomplete="off">
+        <div class="campo">
+          <label for="prod-codigo">Código</label>
+          <input type="text" id="prod-codigo" name="codigo" required>
+        </div>
+        <div class="campo">
+          <label for="prod-nombre">Nombre</label>
+          <input type="text" id="prod-nombre" name="nombre" required>
+        </div>
+        <div class="campo">
+          <label for="prod-categoria">Categoría</label>
+          <select id="prod-categoria" name="categoria" required>
+            <option value="">Seleccionar…</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="prod-unidad">Unidad</label>
+          <select id="prod-unidad" name="unidad" required>
+            <option value="">Seleccionar…</option>
+            <option value="unidad">Unidad</option>
+            <option value="kg">Kilogramo</option>
+            <option value="g">Gramo</option>
+            <option value="l">Litro</option>
+            <option value="ml">Mililitro</option>
+            <option value="pack">Pack</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="prod-precio">Precio ($)</label>
+          <input type="number" inputmode="decimal" id="prod-precio" name="precio" min="0" step="0.01" required>
+        </div>
+        <div class="campo">
+          <label for="prod-stock-inicial">Stock inicial</label>
+          <input type="number" inputmode="decimal" id="prod-stock-inicial" name="stockInicial" min="0" step="any" required>
+        </div>
+        <div class="campo">
+          <label for="prod-stock-minimo">Stock mínimo</label>
+          <input type="number" inputmode="decimal" id="prod-stock-minimo" name="stockMinimo" min="0" step="any" required>
+        </div>
+        <div class="acciones">
+          <button type="submit" id="btn-guardar-producto">Guardar producto</button>
+          <button type="reset" id="btn-cancelar-producto">Limpiar</button>
+        </div>
+      </form>
+
+      <div class="herramientas" role="search">
+        <div class="campo">
+          <label for="buscar-producto">Buscar</label>
+          <input type="search" id="buscar-producto" placeholder="Código o nombre">
+        </div>
+        <div class="campo">
+          <label for="filtro-categoria">Categoría</label>
+          <select id="filtro-categoria">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="filtro-estado">Estado</label>
+          <select id="filtro-estado">
+            <option value="">Todos</option>
+            <option value="ok">Stock normal</option>
+            <option value="bajo">Stock bajo</option>
+            <option value="sin-stock">Sin stock</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tabla-contenedor">
+        <table id="tabla-productos">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Unidad</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Mínimo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-productos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MOVIMIENTOS -->
+    <section id="vista-movimientos" class="vista" aria-labelledby="titulo-movimientos">
+      <h2 id="titulo-movimientos">Movimientos</h2>
+
+      <form id="form-movimiento" autocomplete="off">
+        <div class="campo">
+          <label for="mov-codigo">Código de producto</label>
+          <input type="text" id="mov-codigo" name="codigo" list="lista-codigos" required>
+          <datalist id="lista-codigos"></datalist>
+        </div>
+        <div class="campo">
+          <label for="mov-tipo">Tipo</label>
+          <select id="mov-tipo" name="tipo" required>
+            <option value="">Seleccionar…</option>
+            <option value="entrada">Entrada</option>
+            <option value="salida">Salida</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="mov-motivo">Motivo</label>
+          <input type="text" id="mov-motivo" name="motivo" required>
+        </div>
+        <div class="campo">
+          <label for="mov-cantidad">Cantidad</label>
+          <input type="number" inputmode="decimal" id="mov-cantidad" name="cantidad" min="0" step="any" required>
+        </div>
+        <div class="campo">
+          <label for="mov-fecha">Fecha</label>
+          <input type="date" id="mov-fecha" name="fecha" required>
+        </div>
+        <div class="campo campo-ancho">
+          <label for="mov-observacion">Observación</label>
+          <textarea id="mov-observacion" name="observacion" rows="2"></textarea>
+        </div>
+        <div class="acciones">
+          <button type="submit" id="btn-guardar-movimiento">Registrar movimiento</button>
+          <button type="reset">Limpiar</button>
+        </div>
+      </form>
+
+      <h3>Historial</h3>
+      <div class="tabla-contenedor">
+        <table id="tabla-movimientos">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th>Motivo</th>
+              <th>Cantidad</th>
+              <th>Observación</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-movimientos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ALERTAS -->
+    <section id="vista-alertas" class="vista" aria-labelledby="titulo-alertas">
+      <h2 id="titulo-alertas">Alertas</h2>
+      <p class="ayuda">Productos con stock igual o menor al mínimo.</p>
+      <ul id="lista-alertas"></ul>
+    </section>
+
+    <!-- CATEGORÍAS -->
+    <section id="vista-categorias" class="vista" aria-labelledby="titulo-categorias">
+      <h2 id="titulo-categorias">Categorías</h2>
+
+      <form id="form-categoria" autocomplete="off">
+        <div class="campo">
+          <label for="cat-nombre">Nombre de la categoría</label>
+          <input type="text" id="cat-nombre" name="nombre" required>
+        </div>
+        <div class="acciones">
+          <button type="submit" id="btn-guardar-categoria">Agregar categoría</button>
+        </div>
+      </form>
+
+      <ul id="lista-categorias"></ul>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <p>Súper Barrio · Sistema de stock ficticio</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
